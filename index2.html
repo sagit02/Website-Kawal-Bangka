@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kawal Bangka</title>
+
+  <!-- =========================================
+       ================  STYLES  ================
+       ========================================= -->
+  <style>
+    :root {
+      --primary: #007bff;
+      --primary-dark: #0056b3;
+      --danger: #dc3545;
+      --danger-dark: #b02a37;
+      --bg: #f7f7f7;
+      --bubble-user: #e8f3ff;  /* biru muda */
+      --bubble-admin: #eeeeee; /* abu muda */
+      --star: #f5c518;         /* warna bintang rating */
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      background-color: var(--bg);
+      margin: 0;
+    }
+
+    header {
+      background: var(--primary);      color: #fff;
+      text-align: center;
+      padding: 1rem;
+    }
+
+    nav {
+      background: var(--primary-dark);
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: .25rem;
+    }
+
+    nav button {
+      background: transparent;
+      border: none;
+      color: #fff;
+      padding: 1rem;
+      cursor: pointer;
+      font-size: 1rem;
+      border-radius: .5rem;
+    }
+    nav button:hover { background: rgba(255,255,255,.1); }
+
+    section {
+      display: none;
+      padding: 1.5rem;
+      background: #fff;
+      margin: 1.25rem auto;
+      border-radius: 12px;
+      max-width: 900px;
+      box-shadow: 0 8px 24px rgba(0,0,0,.06);
+    }
+    section.active { display: block; }
+
+    h2 { margin: .25rem 0 1rem; }
+
+    label {
+      display: block;
+      margin-top: 1rem;
+      font-weight: 700;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      padding: .6rem .75rem;
+      margin-top: .5rem;
+      border: 1px solid #d5d5d5;
+      border-radius: 8px;
+      font-size: .95rem;
+      background: #fff;
+    }
+
+    .submit {
+      margin-top: 1rem;
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      padding: .75rem 1rem;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    .submit:hover { background: var(--primary-dark); }
+
+    .btn-danger { background: var(--danger); }
+    .btn-danger:hover { background: var(--danger-dark); }
+    .btn-secondary { background: #6c757d; color: #fff; }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+
+    .result {
+      margin-top: 1rem;
+      padding: 1rem;
+      background: #eef3f7;
+      border-radius: 8px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+    }
+    th, td {
+      border: 1px solid #e5e5e5;
+      padding: 8px;
+      text-align: left;
+      vertical-align: top;
+    }
+    th {
+      background: var(--primary);
+      color: #fff;
+    }
+
+    /* ===== Chat bubble (mirip WhatsApp) ===== */
+    .chat-wrap {
+      background: #f4fdfd;
+      border: 1px solid #e8f1f1;
+      border-radius: 12px;
+      padding: 12px;
+      max-height: 420px;
+      overflow-y: auto;
+    }
+    .msg {
+      display: flex;
+      margin: 8px 0;
+      gap: 8px;
+    }
+    .msg.user { justify-content: flex-start; }
+    .msg.admin { justify-content: flex-end; }
+    .bubble {
+      max-width: 75%;
+      padding: 10px 12px;
+      border-radius: 14px;
+      line-height: 1.35;
+      font-size: .95rem;
+      position: relative;
+      white-space: pre-wrap; /* jaga baris */
+      word-wrap: break-word;
+    }
+    .msg.user .bubble {
+      background: var(--bubble-user);
+      border-top-left-radius: 4px;
+    }
+    .msg.admin .bubble {
+      background: var(--bubble-admin);
+      border-top-right-radius: 4px;
+    }
+    .meta {
+      font-size: .75rem;
+      opacity: .7;
+      margin-top: 4px;
+      text-align: right;
+    }
+
+    .actions {
+      display: flex;
+      gap: .5rem;
+      flex-wrap: wrap;
+      margin-top: .75rem;
+    }
+
+    /* Login admin */
+    #loginAdmin { text-align: center; }
+    #loginAdmin input { max-width: 360px; margin-inline: auto; }
+
+    /* Penilaian (bintang 1–5) */
+    .stars {
+      display: flex;
+      gap: 6px;
+      margin: 10px 0 6px;
+      user-select: none;
+    }
+    .star {
+      font-size: 2rem;
+      color: #ccc;
+      cursor: pointer;
+      transition: transform .15s ease;
+      line-height: 1;
+    }
+    .star:hover { transform: scale(1.08); }
+    .star.active { color: var(--star); }
+
+    .hidden { display: none; }
+
+    #logoutBtn { float: right; }
+  </style>
+</head>
+<body>
+
+  <!-- =========================================
+       ================  HEADER  ================
+       ========================================= -->
+  <header style="display:flex;align-items:center;justify-content:center;gap:12px;background:#007bff;color:#fff;padding:1rem;">
+    <img src="data:image/png;base64,paste_base64_logo_di_sini"
+         alt="Logo Inspektorat Kabupaten Bangka"
+         style="height:70px;width:auto;">
+    <h1 style="margin:0;">Kawal Bangka</h1>
+  </header>
+
+  <!-- =========================================
+       ==============  NAVBAR  =================
+       ========================================= -->
+  <nav>
+    <button onclick="showSection('formulir')">Formulir Konsultasi</button>
+    <button onclick="showSection('progres')">Progres Konsultasi</button>
+    <button onclick="showLogin()">Admin Jawaban</button>
+    <button onclick="showDaftar()">Daftar Konsultasi</button>
+  </nav>
+
+  <!-- =========================================
+       ==============  FORMULIR  ===============
+       ========================================= -->
+  <section id="formulir" class="active">
+    <h2>Formulir Konsultasi</h2>
+
+    <form id="consultationForm">
+      <div class="row">
+        <div>
+          <label>Nama Penanya</label>
+          <input type="text" id="nama" required />
+        </div>
+        <div>
+          <label>Jabatan</label>
+          <input type="text" id="jabatan" required />
+        </div>
+      </div>
+
+      <div class="row">
+        <div>
+          <label>Unit Kerja</label>
+          <input type="text" id="unitKerja" required />
+        </div>
+        <div>
+          <label>Nomor HP (Whatsapp)</label>
+          <input type="tel" id="nomorHP" required />
+        </div>
+      </div>
+
+      <label>Jenis Layanan Konsultasi</label>
+      <select id="jenisLayanan" required>
+        <option value="">--Pilih Jenis Layanan--</option>
+        <option>Pengembangan Kompetensi</option>
+        <option>Uji Kompetensi</option>
+        <option>Formasi Kebutuhan</option>
+        <option>Pengangkatan</option>
+        <option>Karir</option>
+        <option>Permasalahan Aplikasi</option>
+      </select>
+
+      <label>Judul Permasalahan</label>
+      <input type="text" id="judulPermasalahan" required />
+
+      <label>Detail Permasalahan</label>
+      <textarea id="detailPermasalahan" rows="4" required></textarea>
+
+      <!-- (Opsional) lampiran bisa ditambahkan kembali jika diinginkan 
+      <label>Lampiran Dokumen (Opsional)</label>
+      <input type="file" id="lampiran" accept=".pdf,.jpg,.png" />
+      -->
+
+      <button type="submit" class="submit">Kirim Konsultasi</button>
+    </form>
+
+    <div class="result" id="kodeResult" style="display:none;"></div>
+  </section>
+
+  <!-- =========================================
+       ============  PROGRES (USER)  ===========
+       ========================================= -->
+  <section id="progres">
+    <h2>Cek & Progres Konsultasi</h2>
+
+    <div class="row">
+      <div>
+        <label>Kode Konsultasi</label>
+        <input type="text" id="kodeKonsultasi" placeholder="Masukkan kode konsultasi" />
+      </div>
+      <div style="align-self:end">
+        <button class="submit" onclick="cekProgres()">Cek</button>
+      </div>
+    </div>
+
+    <div id="progresArea" class="hidden">
+      <div class="result">
+        <b>Judul:</b> <span id="progresJudul"></span>
+        &nbsp;•&nbsp;
+        <b>Status:</b> <span id="progresStatus"></span>
+      </div>
+
+      <!-- Riwayat Chat Pengguna -->
+      <div class="chat-wrap" id="chatUser"></div>
+
+      <!-- Tombol Aksi -->
+      <div class="actions" id="progressActions">
+        <button class="submit" id="btnTanyaKembali" onclick="toggleTanyaKembali(true)">Tanya Kembali</button>
+        <button class="submit btn-secondary" id="btnSelesai" onclick="tandaiSelesai()">Selesai Konsultasi</button>
+      </div>
+
+      <!-- Form Tanya Kembali -->
+      <div id="tanyaKembaliBox" class="hidden" style="margin-top:.75rem;">
+        <label>Detail Permasalahan Lanjutan</label>
+        <textarea id="lanjutanUser" rows="3" placeholder="Tulis pertanyaan lanjutan..."></textarea>
+        <div class="actions">
+          <button class="submit" onclick="kirimTanyaKembali()">Kirim Konsultasi</button>
+          <button class="submit btn-secondary" onclick="toggleTanyaKembali(false)">Batal</button>
+        </div>
+      </div>
+
+      <!-- ========= Penilaian (muncul setelah selesai) ========= -->
+      <div id="penilaianBox" class="hidden" style="margin-top:1rem;">
+        <h3>Penilaian Konsultasi</h3>
+
+        <!-- Bintang 1–5 -->
+        <div class="stars" id="stars">
+          <span class="star" data-val="1">★</span>
+          <span class="star" data-val="2">★</span>
+          <span class="star" data-val="3">★</span>
+          <span class="star" data-val="4">★</span>
+          <span class="star" data-val="5">★</span>
+        </div>
+
+        <!-- Kolom komentar -->
+        <label>Masukan Anda</label>
+        <textarea id="feedbackText" rows="3" placeholder="Tuliskan penilaian Anda..."></textarea>
+
+        <!-- Simpan Penilaian -->
+        <div class="actions">
+          <button class="submit" onclick="selesaiPenilaian()">Selesai</button>
+        </div>
+      </div>
+      <!-- ======== /Penilaian ========= -->
+    </div>
+  </section>
+
+  <!-- =========================================
+       ==============  LOGIN ADMIN  =============
+       ========================================= -->
+  <section id="loginAdmin">
+    <h2>Login Admin</h2>
+    <input type="password" id="adminPassword" placeholder="Masukkan password admin" />
+    <button class="submit" onclick="loginAdmin()">Login</button>
+    <div class="result" id="loginResult" style="display:none;"></div>
+  </section>
+
+  <!-- =========================================
+       ================  ADMIN  =================
+       ========================================= -->
+  <section id="admin">
+    <h2>Halaman Admin - Jawaban Konsultasi</h2>
+
+    <!-- Logout -->
+    <button id="logoutBtn" class="submit btn-danger" onclick="logoutAdmin()">Logout</button>
+
+    <!-- Cari kode -->
+    <div class="row">
+      <div>
+        <label>Kode Konsultasi</label>
+        <input type="text" id="kodeAdmin" placeholder="Masukkan kode konsultasi" />
+      </div>
+      <div style="align-self:end">
+        <button class="submit" onclick="muatChatAdmin()">Muat Percakapan</button>
+      </div>
+    </div>
+
+    <!-- Area Admin -->
+    <div id="adminArea" class="hidden">
+      <div class="result">
+        <b>Judul:</b> <span id="adminJudul"></span>
+        &nbsp;•&nbsp;
+        <b>Status:</b> <span id="adminStatus"></span>
+      </div>
+
+      <!-- Riwayat Chat Admin -->
+      <div class="chat-wrap" id="chatAdmin"></div>
+
+      <!-- Kirim jawaban admin -->
+      <label>Jawab (balasan admin)</label>
+      <textarea id="jawabanAdmin" rows="3" placeholder="Tulis jawaban untuk penanya..."></textarea>
+      <div class="actions">
+        <button class="submit" onclick="kirimJawabanAdmin()">Kirim Jawaban</button>
+        <!-- (Sesuai permintaan: tombol tandai selesai DIHAPUS dari admin) -->
+      </div>
+
+      <!-- Tampil Penilaian Pengguna -->
+      <div class="result" id="penilaianAdmin" style="display:block;"></div>
+
+      <div class="result" id="adminResult" style="display:none;"></div>
+    </div>
+  </section>
+
+  <!-- =========================================
+       ================  DAFTAR  ================
+       ========================================= -->
+  <section id="daftar">
+    <h2>Daftar Semua Konsultasi</h2>
+    <button id="logoutBtn" class="submit btn-danger" onclick="logoutAdmin()">Logout</button>
+    <div id="daftarContainer"></div>
+  </section>
+
+  <!-- =========================================
+       ================  SCRIPT  ================
+       ========================================= -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>    
+  <script>
+    const SUPABASE_URL = "https://rakutkikfmcskciouxvi.supabase.co";
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJha3V0a2lrZm1jc2tjaW91eHZpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI5NTYzNzAsImV4cCI6MjA3ODUzMjM3MH0.798t_dyptJ4JOfPKDLcaSqK-9gdiVufTIU0DEtyOasE";
+    const supabase = supabase.createClient (SUPABASE_URL, SUPABASE_KEY);  
+    /*************************************************
+     * STATE & KONSTANTA
+     *************************************************/
+    const ADMIN_PASSWORD = 'admin123'; // ubah sesuai kebutuhan
+    const STATUS = {
+      MENUNGGU: 'Menunggu Jawaban',
+      BERJALAN: 'Berjalan',
+      SELESAI: 'Selesai'
+    };
+
+    let kodeAktifUser = null;   // kode yang sedang dibuka user di "Progres"
+    let kodeAktifAdmin = null;  // kode yang sedang dibuka admin
+    let ratingValue = 0;        // nilai bintang (1-5) saat penilaian
+
+    /*************************************************
+     * UTIL & STORAGE
+     *************************************************/
+    function nowISO(){ return new Date().toISOString(); }
+    function fmtTime(iso){ try{ return new Date(iso).toLocaleString(); }catch(_){ return ''; } }
+
+    async function setK(kode, obj) {
+      const { data, error } = await supabase.form('konsultasi').upsert({ kode: Kode, data: obj});
+      if (error) console.error("Gagal simpan:", error.message);
+    }
+
+    async function getK(kode) {
+      const { data, error } = await supabase.from('konsultasi').select('data').eq('kode', kode).single();
+      if (error) return null;
+      return data?.data || null;
+    }
+    function ensureStructure(obj){
+      if(!obj.riwayat) obj.riwayat = [];
+      if(!obj.status) obj.status = STATUS.MENUNGGU;
+      // siapkan kolom penilaian bila belum ada
+      if(typeof obj.rating === 'undefined') obj.rating = null;
+      if(typeof obj.feedback === 'undefined') obj.feedback = '';
+      return obj;
+    }
+    function escapeHtml(str){
+      return (str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    /*************************************************
+     * NAV & AUTH
+     *************************************************/
+    function showSection(id){
+      document.querySelectorAll('section').forEach(s => s.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+    }
+
+    function showLogin(){
+      const on = sessionStorage.getItem('adminLoggedIn')==='true';
+      showSection(on ? 'admin' : 'loginAdmin');
+    }
+
+    function loginAdmin(){
+      const pass = document.getElementById('adminPassword').value;
+      const res = document.getElementById('loginResult');
+      if(pass === ADMIN_PASSWORD){
+        sessionStorage.setItem('adminLoggedIn', 'true');
+        res.style.display = 'block';
+        res.style.color = 'green';
+        res.textContent = 'Login berhasil!';
+        setTimeout(() => showSection('admin'), 700);
+      } else {
+        res.style.display = 'block';
+        res.style.color = 'red';
+        res.textContent = 'Password salah!';
+      }
+    }
+
+    function logoutAdmin(){
+      sessionStorage.removeItem('adminLoggedIn');
+      alert('Anda telah logout.');
+      showSection('loginAdmin');
+    }
+
+    /*************************************************
+     * RENDER CHAT
+     *************************************************/
+    function renderChat(container, riwayat){
+      container.innerHTML = '';
+      (riwayat||[]).forEach(m => {
+        const div = document.createElement('div');
+        div.className = 'msg ' + (m.role === 'admin' ? 'admin' : 'user');
+        div.innerHTML = `
+          <div class="bubble">
+            ${escapeHtml(m.text)}
+            <div class="meta">${fmtTime(m.at)}</div>
+          </div>
+        `;
+        container.appendChild(div);
+      });
+      container.scrollTop = container.scrollHeight;
+    }
+
+    /*************************************************
+     * FORMULIR: Submit konsultasi
+     *************************************************/
+    document.getElementById('consultationForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const kode = 'KONS-' + Math.floor(Math.random() * 1000000);
+
+      const data = ensureStructure({
+        nama: document.getElementById('nama').value.trim(),
+        jabatan: document.getElementById('jabatan').value.trim(),
+        unit: document.getElementById('unitKerja').value.trim(),
+        hp: document.getElementById('nomorHP').value.trim(),
+        layanan: document.getElementById('jenisLayanan').value,
+        judul: document.getElementById('judulPermasalahan').value.trim(),
+        detail: document.getElementById('detailPermasalahan').value.trim(),
+        status: STATUS.MENUNGGU,
+        riwayat: []
+      });
+
+      // pesan pertama dari user
+      data.riwayat.push({ role:'user', text:data.detail, at: nowISO() });
+
+      setK(kode, data);
+
+      // tampilkan kode
+      const box = document.getElementById('kodeResult');
+      box.style.display = 'block';
+      box.innerHTML = `<strong>Konsultasi berhasil dikirim!</strong><br>Kode Konsultasi Anda: <b>${kode}</b>`;
+
+      e.target.reset();
+    });
+
+    /*************************************************
+     * PROGRES: cek kode & tampilkan percakapan
+     *************************************************/
+    function cekProgres(){
+      const kode = document.getElementById('kodeKonsultasi').value.trim();
+      const k = getK(kode);
+      const area = document.getElementById('progresArea');
+      const chat = document.getElementById('chatUser');
+
+      if(!k){
+        area.classList.add('hidden');
+        alert('Kode tidak ditemukan.');
+        return;
+      }
+
+      ensureStructure(k);
+      kodeAktifUser = kode;
+
+      document.getElementById('progresJudul').textContent  = k.judul;
+      document.getElementById('progresStatus').textContent = k.status;
+
+      renderChat(chat, k.riwayat);
+      area.classList.remove('hidden');
+
+      // Kunci tanya kembali jika sudah selesai
+      document.getElementById('btnTanyaKembali').disabled = (k.status === STATUS.SELESAI);
+
+      // Jika sudah pernah selesai & ada rating, sembunyikan box rating (karena sudah diisi)
+      if(k.status === STATUS.SELESAI){
+        // kalau rating belum diisi, tampilkan penilaianBox untuk diisi
+        document.getElementById('penilaianBox').classList.toggle('hidden', !!k.rating);
+        document.getElementById('btnSelesai').disabled = true;
+      } else {
+        document.getElementById('penilaianBox').classList.add('hidden');
+        document.getElementById('btnSelesai').disabled = false;
+      }
+    }
+
+    // buka/ tutup form tanya kembali
+    function toggleTanyaKembali(show){
+      if(!kodeAktifUser){ alert('Cek kode terlebih dahulu.'); return; }
+      const box = document.getElementById('tanyaKembaliBox');
+      box.classList.toggle('hidden', !show);
+    }
+
+    // kirim pertanyaan lanjutan (user)
+    function kirimTanyaKembali(){
+      const teks = document.getElementById('lanjutanUser').value.trim();
+      if(!teks){ alert('Mohon isi pertanyaan lanjutan.'); return; }
+      const k = getK(kodeAktifUser);
+      if(!k){ alert('Kode tidak ditemukan.'); return; }
+
+      ensureStructure(k);
+      k.riwayat.push({ role:'user', text:teks, at: nowISO() });
+
+      // jika sebelumnya selesai (misal user ingin buka kembali), status tetap Selesai
+      // (namun sesuai requirement Anda, setelah Selesai maka seluruh konsultasi selesai dan tanya kembali terkunci.
+      //   Jadi kita TIDAK mengubah status kembali ke Berjalan.)
+      setK(kodeAktifUser, k);
+
+      document.getElementById('lanjutanUser').value = '';
+      toggleTanyaKembali(false);
+
+      renderChat(document.getElementById('chatUser'), k.riwayat);
+      document.getElementById('progresStatus').textContent = k.status;
+    }
+
+    // user menandai selesai: kunci tanya kembali, tampil rating
+    function tandaiSelesai(){
+      if(!kodeAktifUser){ alert('Cek kode terlebih dahulu.'); return; }
+      const k = getK(kodeAktifUser);
+      if(!k){ alert('Kode tidak ditemukan.'); return; }
+
+      k.status = STATUS.SELESAI;
+      setK(kodeAktifUser, k);
+
+      document.getElementById('progresStatus').textContent = k.status;
+      document.getElementById('btnTanyaKembali').disabled = true;
+      document.getElementById('btnSelesai').disabled = true;
+
+      // tampilkan form penilaian
+      document.getElementById('penilaianBox').classList.remove('hidden');
+
+      // reset rating visual
+      ratingValue = 0;
+      document.querySelectorAll('#stars .star').forEach(s => s.classList.remove('active'));
+      document.getElementById('feedbackText').value = '';
+    }
+
+    // interaksi bintang (klik ★)
+    document.querySelectorAll('#stars .star').forEach(el => {
+      el.addEventListener('click', () => {
+        const val = Number(el.getAttribute('data-val'));
+        setRating(val);
+      });
+    });
+
+    function setRating(n){
+      ratingValue = n;
+      const all = document.querySelectorAll('#stars .star');
+      all.forEach((s, i) => s.classList.toggle('active', i < n));
+    }
+
+    // simpan rating & komentar
+    function selesaiPenilaian(){
+      if(!kodeAktifUser){ alert('Cek kode terlebih dahulu.'); return; }
+      const k = getK(kodeAktifUser);
+      if(!k){ alert('Kode tidak ditemukan.'); return; }
+
+      const feedback = document.getElementById('feedbackText').value.trim();
+
+      k.rating   = ratingValue || 0;
+      k.feedback = feedback || '';
+
+      setK(kodeAktifUser, k);
+
+      alert('Terima kasih atas penilaian Anda!');
+      document.getElementById('penilaianBox').classList.add('hidden');
+    }
+
+    /*************************************************
+     * ADMIN: muat chat & kirim jawaban
+     *************************************************/
+    function muatChatAdmin(){
+      if(sessionStorage.getItem('adminLoggedIn') !== 'true'){
+        alert('Login sebagai admin terlebih dahulu.');
+        return;
+      }
+
+      const kode = document.getElementById('kodeAdmin').value.trim();
+      const k = getK(kode);
+      const area = document.getElementById('adminArea');
+      const chat = document.getElementById('chatAdmin');
+
+      if(!k){
+        area.classList.add('hidden');
+        alert('Kode tidak ditemukan.');
+        return;
+      }
+
+      ensureStructure(k);
+      kodeAktifAdmin = kode;
+
+      document.getElementById('adminJudul').textContent  = k.judul;
+      document.getElementById('adminStatus').textContent = k.status;
+
+      renderChat(chat, k.riwayat);
+      area.classList.remove('hidden');
+
+      // tampilkan penilaian jika ada
+      const pen = document.getElementById('penilaianAdmin');
+      if(k.rating){
+        const stars = '★'.repeat(k.rating) + '☆'.repeat(5 - k.rating);
+        const note  = escapeHtml(k.feedback || '');
+        pen.innerHTML = `<h3>Penilaian Pengguna</h3><div style="font-size:1.25rem">${stars}</div><p style="margin:.5rem 0 0;">${note}</p>`;
+      } else {
+        pen.innerHTML = `<i>Belum ada penilaian.</i>`;
+      }
+    }
+
+    function kirimJawabanAdmin(){
+      if(sessionStorage.getItem('adminLoggedIn') !== 'true'){
+        alert('Login sebagai admin terlebih dahulu.');
+        return;
+      }
+      if(!kodeAktifAdmin){ alert('Muat percakapan dahulu.'); return; }
+
+      const teks = document.getElementById('jawabanAdmin').value.trim();
+      if(!teks){ alert('Isi jawaban terlebih dahulu.'); return; }
+
+      const k = getK(kodeAktifAdmin);
+      if(!k){ alert('Kode tidak ditemukan.'); return; }
+
+      ensureStructure(k);
+      k.riwayat.push({ role:'admin', text:teks, at: nowISO() });
+
+      // jika user sedang lihat progres kode yang sama, sinkron tampilan
+      setK(kodeAktifAdmin, k);
+      document.getElementById('jawabanAdmin').value = '';
+
+      renderChat(document.getElementById('chatAdmin'), k.riwayat);
+
+      if(kodeAktifUser === kodeAktifAdmin){
+        renderChat(document.getElementById('chatUser'), k.riwayat);
+        document.getElementById('progresStatus').textContent = k.status;
+      }
+
+      // info
+      const res = document.getElementById('adminResult');
+      res.style.display = 'block';
+      res.textContent = 'Jawaban terkirim.';
+      setTimeout(() => { res.style.display = 'none'; }, 1500);
+    }
+
+    /*************************************************
+     * DAFTAR: list semua konsultasi
+     *************************************************/
+    function showDaftar(){
+      if(sessionStorage.getItem('adminLoggedIn') === 'true'){
+        tampilkanDaftar();
+        showSection('daftar');
+      } else {
+        alert('Silakan login sebagai admin terlebih dahulu.');
+        showSection('loginAdmin');
+      }
+    }
+
+    function tampilkanDaftar(){
+      let html = '<table><tr><th>Kode</th><th>Nama Penanya</th><th>Judul</th><th>Layanan</th><th>Status</th><th>Aksi</th></tr>';
+      let ada = false;
+
+      // snapshot keys supaya aman saat remove
+      const keys = [];
+      for(let i=0; i<localStorage.length; i++){
+        keys.push(localStorage.key(i));
+      }
+      keys.sort();
+
+      keys.forEach(key => {
+        if(key && key.startsWith('KONS-')){
+          const it = getK(key);
+          if(!it) return;
+          ada = true;
+          const status = it.status || STATUS.MENUNGGU;
+
+          html += `
+            <tr>
+              <td>${key}</td>
+              <td>${escapeHtml(it.nama)}</td>
+              <td>${escapeHtml(it.judul)}</td>
+              <td>${escapeHtml(it.layanan)}</td>
+              <td>${status}</td>
+              <td>
+                <button class="submit btn-secondary" onclick="bukaDiAdmin('${key}')">Buka</button>
+                <button class="submit btn-danger" onclick="hapusKonsultasi('${key}')">Hapus</button>
+              </td>
+            </tr>
+          `;
+        }
+      });
+
+      html += '</table>';
+      document.getElementById('daftarContainer').innerHTML = ada ? html : '<p>Tidak ada data konsultasi.</p>';
+    }
+
+    function bukaDiAdmin(kode){
+      showSection('admin');
+      document.getElementById('kodeAdmin').value = kode;
+      muatChatAdmin();
+    }
+
+    function hapusKonsultasi(kode){
+      if(confirm(`Yakin ingin menghapus konsultasi ${kode}?`)){
+        localStorage.removeItem(kode);
+        tampilkanDaftar();
+      }
+    }
+  </script>
+</body>
+</html>
